@@ -1,38 +1,38 @@
-name: Release Build
-run-name: Create Release (${{ inputs.version }})
-
-on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Version
-        required: true
-
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3.5.3
+    - continue-on-error: true
+      name: Checkout
+      uses: actions/checkout@v3.5.3
+    - continue-on-error: true
+      name: Setup Java
+      uses: actions/setup-java@v3.11.0
+      with:
+        cache: maven
+        distribution: temurin
+        gpg-passphrase: GPG_PASSPHRASE
+        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+        java-version: 8
+        server-id: ossrh
+        server-password: MAVEN_PASSWORD
+        server-username: MAVEN_USERNAME
+    - continue-on-error: true
+      env:
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+      name: Build
+      run: 'git config --global user.name github-actions
 
-      - name: Setup Java
-        uses: actions/setup-java@v3.11.0
-        with:
-          distribution: temurin
-          java-version: 8
-          cache: maven
-          server-id: ossrh
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: GPG_PASSPHRASE
+        git config --global user.email github-actions@github.com
 
-      - name: Build
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          git config --global user.name github-actions
-          git config --global user.email github-actions@github.com
-          mvn -B -ntp deploy scm:tag -P release -Drevision=${{ github.event.inputs.version }}
+        mvn -B -ntp deploy scm:tag -P release -Drevision=${{ github.event.inputs.version
+        }}
+
+        '
+name: Release Build
+on:
+  repository_dispatch:
+    types: trigger-ga___release.yml
+run-name: Create Release (${{ inputs.version }})
